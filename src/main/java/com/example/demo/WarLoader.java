@@ -5,9 +5,11 @@ import org.apache.catalina.loader.WebappLoader;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.*;
 
+@Configuration
 public class WarLoader {
   private static final String WAR_RESOURCE_PATH = "sample.war";
 

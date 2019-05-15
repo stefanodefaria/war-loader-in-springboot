@@ -8,3 +8,7 @@ mvn clean package
 
 Run:
 java -jar target/war-loader-in-springboot*.jar
+
+Then, the following endpoints will be available:
+http://localhost:8080/war
+http://localhost:8080/spring
