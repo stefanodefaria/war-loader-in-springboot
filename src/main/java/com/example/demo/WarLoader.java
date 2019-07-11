@@ -1,7 +1,11 @@
 package com.example.demo;
 
 import org.apache.catalina.Context;
+import org.apache.catalina.connector.Connector;
 import org.apache.catalina.loader.WebappLoader;
+import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
 import org.springframework.context.annotation.Bean;
@@ -11,20 +15,16 @@ import java.io.*;
 
 @Configuration
 public class WarLoader {
-  private static final String WAR_RESOURCE_PATH = "sample.war";
 
   @Bean
   public TomcatServletWebServerFactory tomcatFactory() {
     return new TomcatServletWebServerFactory() {
       @Override
-      protected TomcatWebServer getTomcatWebServer(org.apache.catalina.startup.Tomcat tomcat) {
+      protected TomcatWebServer getTomcatWebServer(Tomcat tomcat) {
 
+        addConnectorToTomcat(tomcat, 8081);
         try {
-          Context context = tomcat.addWebapp("/war", getResource(WAR_RESOURCE_PATH));
-          new File(tomcat.getServer().getCatalinaBase().getAbsolutePath() + "/webapps").mkdirs();
-          WebappLoader loader =
-            new WebappLoader(Thread.currentThread().getContextClassLoader());
-          context.setLoader(loader);
+          addWarFileToTomcat(tomcat, "sample.war", "/war");
         } catch (IOException e) {
           System.err.println("Unable to load sample WAR file");
           e.printStackTrace();
@@ -32,6 +32,33 @@ public class WarLoader {
         return super.getTomcatWebServer(tomcat);
       }
     };
+  }
+
+  private void addWarFileToTomcat(Tomcat tomcat, String resourcePath, String endpointPath) throws IOException {
+    Context context = tomcat.addWebapp(endpointPath, getResource(resourcePath));
+    new File(tomcat.getServer().getCatalinaBase().getAbsolutePath() + "/webapps").mkdirs();
+    context.setLoader(new WebappLoader(Thread.currentThread().getContextClassLoader()));
+    addFilterToWarContext(context, WarFilter.class);
+  }
+
+  private void addConnectorToTomcat(Tomcat tomcat, int connectorPort) {
+    Connector c = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
+    c.setPort(connectorPort);
+    tomcat.getService().addConnector(c);
+  }
+
+  private void addFilterToWarContext(Context context, Class clazz) {
+    FilterDef filter1definition = new FilterDef();
+    filter1definition.setFilterName(clazz.getSimpleName());
+    filter1definition.setFilterClass(clazz.getName());
+    context.addFilterDef(filter1definition);
+
+    FilterMap filter1mapping = new FilterMap();
+    filter1mapping.setFilterName(clazz.getSimpleName());
+
+    filter1mapping.addURLPattern("/*"); // this will only be applied to the .war endpoints
+    context.addFilterMap(filter1mapping);
+    context.addFilterDef(filter1definition);
   }
 
   private String getResource(String resourcePath) throws IOException {
