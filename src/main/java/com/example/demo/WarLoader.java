@@ -22,8 +22,8 @@ public class WarLoader {
       @Override
       protected TomcatWebServer getTomcatWebServer(Tomcat tomcat) {
 
-        addConnectorToTomcat(tomcat, 8081);
         try {
+          addConnectorToTomcat(tomcat, 8081);
           addWarFileToTomcat(tomcat, "sample.war", "/war");
         } catch (IOException e) {
           System.err.println("Unable to load sample WAR file");
@@ -41,9 +41,21 @@ public class WarLoader {
     addFilterToWarContext(context, WarFilter.class);
   }
 
-  private void addConnectorToTomcat(Tomcat tomcat, int connectorPort) {
+  private void addConnectorToTomcat(Tomcat tomcat, int connectorPort) throws IOException {
     Connector c = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
-    c.setPort(connectorPort);
+
+    c.setAttribute("port", String.valueOf(connectorPort));
+    c.setAttribute("SSLEnabled", "true");
+    c.setAttribute("scheme", "https");
+    c.setAttribute("secure", "true");
+    c.setAttribute("keystoreFile", getResource("keystore.jks"));
+    c.setAttribute("keystorePass", "changeit");
+    c.setAttribute("truststoreFile", getResource("truststore.jks"));
+    c.setAttribute("truststorePass", "changeit");
+    c.setAttribute("clientAuth", "true");
+    c.setAttribute("sslProtocol", "TLS");
+    c.setAttribute("sslEnabledProtocols", "TLSv1.2");
+
     tomcat.getService().addConnector(c);
   }
 

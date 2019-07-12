@@ -1,7 +1,9 @@
 package com.example.demo;
 
+import java.security.cert.X509Certificate;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class WarFilter implements Filter {
@@ -9,14 +11,15 @@ public class WarFilter implements Filter {
   @Override
   public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-    String authType = ((HttpServletRequest) servletRequest).getAuthType();
+    HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
-    if(!HttpServletRequest.CLIENT_CERT_AUTH.equals(authType)) {
-      System.out.println("Request to war file is NOT authenticated using client certificate");
-
-      // then respond a 401 status code
+    X509Certificate[] certs = (X509Certificate[]) httpRequest.getAttribute("javax.servlet.request.X509Certificate");
+    if (certs == null || certs.length == 0 || certs[0] == null) {
+      System.out.println("Request to war file is NOT authenticated using client certificate: sending 404");
+      HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+      httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
+    } else {
+      filterChain.doFilter(servletRequest, servletResponse);
     }
-
-    filterChain.doFilter(servletRequest, servletResponse);
   }
 }
