@@ -10,6 +10,7 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 
@@ -35,7 +36,7 @@ public class WarLoader {
   }
 
   private void addWarFileToTomcat(Tomcat tomcat, String resourcePath, String endpointPath) throws IOException {
-    Context context = tomcat.addWebapp(endpointPath, getResource(resourcePath));
+    Context context = tomcat.addWebapp(endpointPath, new ClassPathResource(resourcePath).getURL().getPath());
     new File(tomcat.getServer().getCatalinaBase().getAbsolutePath() + "/webapps").mkdirs();
     context.setLoader(new WebappLoader(Thread.currentThread().getContextClassLoader()));
     addFilterToWarContext(context, WarFilter.class);
@@ -48,9 +49,9 @@ public class WarLoader {
     c.setAttribute("SSLEnabled", "true");
     c.setAttribute("scheme", "https");
     c.setAttribute("secure", "true");
-    c.setAttribute("keystoreFile", getResource("keystore.jks"));
+    c.setAttribute("keystoreFile", new ClassPathResource("keystore.jks").getURL().getPath());
     c.setAttribute("keystorePass", "changeit");
-    c.setAttribute("truststoreFile", getResource("truststore.jks"));
+    c.setAttribute("truststoreFile", new ClassPathResource("truststore.jks").getURL().getPath());
     c.setAttribute("truststorePass", "changeit");
     c.setAttribute("clientAuth", "true");
     c.setAttribute("sslProtocol", "TLS");
@@ -71,28 +72,5 @@ public class WarLoader {
     filter1mapping.addURLPattern("/*"); // this will only be applied to the .war endpoints
     context.addFilterMap(filter1mapping);
     context.addFilterDef(filter1definition);
-  }
-
-  private String getResource(String resourcePath) throws IOException {
-
-    String targetFilePath = resourcePath;
-    InputStream is;
-    if ((is = getClass().getClassLoader().getResourceAsStream(resourcePath)) != null) {
-
-      File targetFile = File.createTempFile("tomcat-spring.", ".war");
-      targetFile.deleteOnExit();
-      OutputStream outStream = new FileOutputStream(targetFile);
-
-      byte[] bytes = new byte[1024];
-      int read;
-      while ((read = is.read(bytes)) != -1) {
-        outStream.write(bytes, 0, read);
-      }
-      outStream.flush();
-      outStream.close();
-      targetFilePath = targetFile.getAbsolutePath();
-
-    }
-    return targetFilePath;
   }
 }
