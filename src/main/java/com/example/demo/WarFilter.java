@@ -8,11 +8,20 @@ import java.io.IOException;
 
 public class WarFilter implements Filter {
 
+  static final String ALLOWED_PORT = "allowedPort";
+  private int allowedPort;
+
+  @Override
+  public void init(FilterConfig filterConfig) {
+
+    allowedPort = Integer.valueOf(filterConfig.getInitParameter(ALLOWED_PORT));
+  }
+
   @Override
   public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-    // .war endpoints should only be accessible via port 8081 and when req is using client certificates
-    if(servletRequest.getServerPort() == 8081) {
+    // .war endpoints should only be accessible via specific port and when req is using client certificates
+    if(servletRequest.getServerPort() == allowedPort) {
       HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
       X509Certificate[] certs = (X509Certificate[]) httpRequest.getAttribute("javax.servlet.request.X509Certificate");

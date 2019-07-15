@@ -24,8 +24,9 @@ public class WarLoader {
       protected TomcatWebServer getTomcatWebServer(Tomcat tomcat) {
 
         try {
-          addConnectorToTomcat(tomcat, 8081);
-          addWarFileToTomcat(tomcat, "sample.war", "/war");
+          int allowedPortForWarEndpoints = 8081;
+          addConnectorToTomcat(tomcat, allowedPortForWarEndpoints);
+          addWarFileToTomcat(tomcat, "sample.war", "/war", allowedPortForWarEndpoints);
         } catch (IOException e) {
           System.err.println("Unable to load sample WAR file");
           e.printStackTrace();
@@ -35,11 +36,11 @@ public class WarLoader {
     };
   }
 
-  private void addWarFileToTomcat(Tomcat tomcat, String resourcePath, String endpointPath) throws IOException {
+  private void addWarFileToTomcat(Tomcat tomcat, String resourcePath, String endpointPath, int port) throws IOException {
     Context context = tomcat.addWebapp(endpointPath, new ClassPathResource(resourcePath).getURL().getPath());
     new File(tomcat.getServer().getCatalinaBase().getAbsolutePath() + "/webapps").mkdirs();
     context.setLoader(new WebappLoader(Thread.currentThread().getContextClassLoader()));
-    addFilterToWarContext(context, WarFilter.class);
+    addFilterToWarContext(context, port);
   }
 
   private void addConnectorToTomcat(Tomcat tomcat, int connectorPort) throws IOException {
@@ -60,14 +61,15 @@ public class WarLoader {
     tomcat.getService().addConnector(c);
   }
 
-  private void addFilterToWarContext(Context context, Class clazz) {
+  private void addFilterToWarContext(Context context, int port) {
     FilterDef filter1definition = new FilterDef();
-    filter1definition.setFilterName(clazz.getSimpleName());
-    filter1definition.setFilterClass(clazz.getName());
+    filter1definition.setFilterName(WarFilter.class.getSimpleName());
+    filter1definition.setFilterClass(WarFilter.class.getName());
+    filter1definition.addInitParameter(WarFilter.ALLOWED_PORT, String.valueOf(port));
     context.addFilterDef(filter1definition);
 
     FilterMap filter1mapping = new FilterMap();
-    filter1mapping.setFilterName(clazz.getSimpleName());
+    filter1mapping.setFilterName(WarFilter.class.getSimpleName());
 
     filter1mapping.addURLPattern("/*"); // this will only be applied to the .war endpoints
     context.addFilterMap(filter1mapping);
